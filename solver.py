@@ -1,6 +1,7 @@
 from __future__ import annotations
 import math
 import pygame
+import pickle
 
 pygame.init()
 
@@ -208,6 +209,14 @@ while running:
                 if not hoveredVector:
                     continue
                 sudokuBoard.setNumber(hoveredVector, event.key-48)
+            
+            if event.key == pygame.K_s:
+                with open("output.sav","wb") as f:
+                    pickle.dump(sudokuBoard, f)
+                
+            if event.key == pygame.K_l:
+                with open("output.sav", "rb") as f:
+                    sudokuBoard = pickle.load(f)
 
     sudokuBoard.scanSquares()
 
