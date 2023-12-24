@@ -54,6 +54,8 @@ class Board:
         self.subGrids = {}
         self.unscannedPositions = []
         self.width, self.height = width, height
+        self.topLeftPosition = Vector2(0, 0)
+        self.renderSize = Vector2(0, 0)
 
     def _generatePreSubgridHashes(self, numberLocations : dict[Vector2, int]):
         subgridNumbers = {}
@@ -80,6 +82,13 @@ class Board:
         while self.unscannedPositions:
             position = self.unscannedPositions.pop()
             squareNumber = self.board[position].number
+
+            #Remove noted numbers for number in grid
+            subGrid = self.board[position].subGrid
+            for square in subGrid.squares:
+                if squareNumber in square.notedNumbers:
+                    square.notedNumbers.remove(squareNumber)
+
             possibleLocations = self._getAdjecentToPosition(position)
             for location in possibleLocations:
                 if squareNumber in self.board[location].notedNumbers:
@@ -119,7 +128,7 @@ class Board:
 
                 self.subGrids[subGridVector].addSquare(self.board[positionVector])
         
-        #self.scanSquares()
+        self.scanSquares()
     
     def render(self, screen : pygame.Surface):
 
@@ -174,12 +183,25 @@ class Board:
 
         pygame.draw.rect(screen, (0, 0, 0), pygame.Rect(gridTopLeft.x, gridTopLeft.y, renderedBoardWidth, renderedBoardHeight), 4)
 
+        self.topLeftPosition = gridTopLeft
+        self.renderSize = Vector2(renderedBoardWidth, renderedBoardHeight)
+    
+    def getMouseHoveredVector(self):
+        gridRect = pygame.Rect(self.topLeftPosition.x, self.topLeftPosition.y, self.renderSize.width, self.renderSize.height)
+        mousePosition = Vector2(*pygame.mouse.get_pos())
+        if not gridRect.collidepoint(mousePosition.x, mousePosition.y):
+            return None
+
+        mousePositionShifted = mousePosition - self.topLeftPosition
+        roundedMousePosition = Vector2(mousePositionShifted.x // BOARD_SCALE, mousePositionShifted.y // BOARD_SCALE)
+
+        if roundedMousePosition not in self.board:
+            return None
+
+        return roundedMousePosition
+
 sudokuBoard = Board(9, 9)
-sudokuBoard.setup(numberLocations={Vector2(3, 0):3,
-                                   Vector2(5, 0):6,
-                                   Vector2(6, 0):5,
-                                   Vector2(7, 0):7,
-                                   Vector2(8, 0):4})
+sudokuBoard.setup()
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
@@ -193,8 +215,20 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        
+        if event.type == pygame.KEYDOWN:
+            #If number key pressed
+            if 49 <= event.key <= 57:
+                hoveredVector = sudokuBoard.getMouseHoveredVector()
+                if not hoveredVector:
+                    continue
+                sudokuBoard.setNumber(hoveredVector, event.key-48)
+
+    sudokuBoard.scanSquares()
 
     sudokuBoard.render(screen)
+
+    
 
     pygame.display.flip()
     clock.tick_busy_loop(60)
