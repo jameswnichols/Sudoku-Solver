@@ -58,14 +58,14 @@ class Board:
     def _generatePreSubgridHashes(self, numberLocations : dict[Vector2, int]):
         subgridNumbers = {}
         for location, number in numberLocations.items():
-            subGridVector = Vector2((location.x+1)//3, (location.y+1)//3)
+            subGridVector = Vector2((location.x)//3, (location.y)//3)
             if subGridVector not in subgridNumbers:
                 subgridNumbers[subGridVector] = [x for x in range(1, 10)]
                 subgridNumbers[subGridVector].remove(number)
             else:
                 subgridNumbers[subGridVector].remove(number)
 
-        return {k : v for k, v in subgridNumbers.items()}
+        return subgridNumbers
 
     def _getAdjecentToPosition(self, position : Vector2):
         possibleLocations = set()
@@ -98,9 +98,9 @@ class Board:
         notedNumberLookup = self._generatePreSubgridHashes(numberLocations)
 
         for y in range(0, self.height):
-            currentSubGridY = (y + 1) // 3
+            currentSubGridY = y // 3
             for x in range(0, self.width):
-                currentSubGridX = (x + 1) // 3
+                currentSubGridX = x // 3
 
                 positionVector = Vector2(x, y)
                 subGridVector = Vector2(currentSubGridX, currentSubGridY)
@@ -119,7 +119,7 @@ class Board:
 
                 self.subGrids[subGridVector].addSquare(self.board[positionVector])
         
-        self.scanSquares()
+        #self.scanSquares()
     
     def render(self, screen : pygame.Surface):
 
@@ -175,7 +175,11 @@ class Board:
         pygame.draw.rect(screen, (0, 0, 0), pygame.Rect(gridTopLeft.x, gridTopLeft.y, renderedBoardWidth, renderedBoardHeight), 4)
 
 sudokuBoard = Board(9, 9)
-sudokuBoard.setup(numberLocations={Vector2(4, 4) : 1})
+sudokuBoard.setup(numberLocations={Vector2(3, 0):3,
+                                   Vector2(5, 0):6,
+                                   Vector2(6, 0):5,
+                                   Vector2(7, 0):7,
+                                   Vector2(8, 0):4})
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
