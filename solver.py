@@ -15,7 +15,12 @@ class Vector2:
     def distance(self, other : Vector2):
         return math.sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
     
-    def hash(self):
+    def __eq__(self, other : Vector2):
+        if isinstance(other, Vector2):
+            return (self.x, self.y) == (other.x, other.y)
+        return NotImplemented
+
+    def __hash__(self):
         return hash((self.x, self.y))
 
 class Square:
@@ -39,6 +44,9 @@ class Board:
         self.board = {}
         self.subGrids = {}
 
+    def _generatePreSubgridHashes(self, numberLocations : dict):
+        pass
+
     def setup(self, numberLocations : dict = {}):
         self.board = {}
         self.subGrids = {}
@@ -50,14 +58,14 @@ class Board:
             for x in range(0, 9):
                 currentSubGridX = (x + 1) // 3
 
-                positionVectorHash = Vector2(x, y).hash()
-                subGridVectorHash = Vector2(currentSubGridX, currentSubGridY).hash()
+                positionVector = Vector2(x, y)
+                subGridVector = Vector2(currentSubGridX, currentSubGridY)
 
-                if subGridVectorHash not in self.subGrids:
-                    self.subGrids[subGridVectorHash] = SubGrid()
+                if subGridVector not in self.subGrids:
+                    self.subGrids[subGridVector] = SubGrid()
 
-                self.board[positionVectorHash] = Square(None, self.subGrids[subGridVectorHash])
-                self.subGrids[subGridVectorHash].addSquare(self.board[positionVectorHash])
+                self.board[positionVector] = Square(None, self.subGrids[subGridVector])
+                self.subGrids[subGridVector].addSquare(self.board[positionVector])
 
 sudokuBoard = Board()
-sudokuBoard.setup({})
+sudokuBoard.setup({Vector2(4, 4).hash() : 1})
