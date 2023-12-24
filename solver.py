@@ -60,11 +60,12 @@ class Board:
         for location, number in numberLocations.items():
             subGridVector = Vector2((location.x+1)//3, (location.y+1)//3)
             if subGridVector not in subgridNumbers:
-                subgridNumbers[subGridVector] = set([number])
+                subgridNumbers[subGridVector] = [x for x in range(1, 10)]
+                subgridNumbers[subGridVector].remove(number)
             else:
-                subgridNumbers[subGridVector].add(number)
-        
-        return {k : list(set(range(1, 10)) - v) for k, v in subgridNumbers.items()}
+                subgridNumbers[subGridVector].remove(number)
+
+        return {k : v for k, v in subgridNumbers.items()}
 
     def _getAdjecentToPosition(self, position : Vector2):
         possibleLocations = set()
@@ -126,28 +127,52 @@ class Board:
 
         renderedBoardWidth, renderedBoardHeight = self.width * BOARD_SCALE, self.height * BOARD_SCALE
 
+        halfRenderedBoardVector = Vector2(renderedBoardWidth//2, renderedBoardHeight//2)
+
         for y in range(0, self.height):
             for x in range(0, self.width):
-                number = self.board[Vector2(x, y)].number
-                number = "" if not number else number
-
-                textSurface = FONT[15].render(str(number), False, (0,0,0))
+                square = self.board[Vector2(x, y)]
 
                 squarePosition = Vector2(x * BOARD_SCALE, y * BOARD_SCALE)
 
                 halfBoardScale = BOARD_SCALE / 2
 
                 #Centre square coordinate to its position relative to the centre of the screen.
-                squarePosition = squarePosition + centreVector - Vector2(renderedBoardWidth//2, renderedBoardHeight//2)
+                squarePosition = squarePosition + centreVector - halfRenderedBoardVector
 
                 pygame.draw.rect(screen, (0, 0, 0), pygame.Rect(squarePosition.x, squarePosition.y, BOARD_SCALE, BOARD_SCALE), 1)
 
-                textSizeHalfVector = Vector2(textSurface.get_width()//2, textSurface.get_height()//2)
+                gridTopLeft = centreVector - halfRenderedBoardVector
 
-                #Centre text relative to its square coordinate
-                textPosition = squarePosition + Vector2(halfBoardScale, halfBoardScale) - textSizeHalfVector
+                pygame.draw.rect(screen, (0, 0, 0), pygame.Rect(gridTopLeft.x, gridTopLeft.y, renderedBoardWidth, renderedBoardHeight), 2)
 
-                screen.blit(textSurface, (textPosition.x, textPosition.y))
+                #Show noted numbers instead
+                if not square.number:
+                    notedSurface = pygame.Surface((BOARD_SCALE, BOARD_SCALE), pygame.SRCALPHA)
+
+                    for i, notedNumber in enumerate(self.board[Vector2(x, y)].notedNumbers):
+                        notedX = (i % 3) * (BOARD_SCALE / 3)
+                        notedY = ((i // 3) * (BOARD_SCALE / 3)) + 3
+                        notedText = FONT[8].render(str(notedNumber), False, (0, 0, 0))
+                        centeredNotedPosition = Vector2(notedX, notedY) + Vector2(notedText.get_width()//2, notedText.get_height()//2)
+                        notedSurface.blit(notedText, (centeredNotedPosition.x, centeredNotedPosition.y))
+
+                    screen.blit(notedSurface, (squarePosition.x, squarePosition.y))
+                else:
+                    textSurface = FONT[15].render(str(square.number), False, (0,0,0))
+
+                    textSizeHalfVector = Vector2(textSurface.get_width()//2, textSurface.get_height()//2)
+
+                    #Centre text relative to its square coordinate
+                    textPosition = squarePosition + Vector2(halfBoardScale, halfBoardScale) - textSizeHalfVector
+
+                    screen.blit(textSurface, (textPosition.x, textPosition.y))
+        
+        for subY in range(0, (self.height) // 3):
+            for subX in range(0, (self.width) // 3):
+                pygame.draw.rect(screen, (0, 0, 0), pygame.Rect(gridTopLeft.x+subX*3*BOARD_SCALE, gridTopLeft.y+subY*3*BOARD_SCALE,3*BOARD_SCALE,3*BOARD_SCALE), 2)
+
+        pygame.draw.rect(screen, (0, 0, 0), pygame.Rect(gridTopLeft.x, gridTopLeft.y, renderedBoardWidth, renderedBoardHeight), 4)
 
 sudokuBoard = Board(9, 9)
 sudokuBoard.setup(numberLocations={Vector2(4, 4) : 1})
