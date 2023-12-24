@@ -22,7 +22,7 @@ class Square:
     def __init__(self, number : int, subGrid : SubGrid):
         self.number = number
         self.notedNumbers = []
-        self.grid = subGrid
+        self.subGrid = subGrid
 
 class SubGrid:
     def __init__(self):
