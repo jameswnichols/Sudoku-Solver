@@ -62,6 +62,7 @@ class Board:
         self.width, self.height = width, height
         self.topLeftPosition = Vector2(0, 0)
         self.renderSize = Vector2(0, 0)
+        self.scanned = False
 
     def _getAdjecentToPosition(self, position : Vector2):
         possibleLocations = set()
@@ -78,16 +79,24 @@ class Board:
 
         for position, square in self.board.items():
             #Remove noted numbers for number in grid
-            subGrid = square.subGrid
-            for subSquare in subGrid.squares:
-                if square.number in subSquare.notedNumbers:
-                    subSquare.notedNumbers.remove(square.number)
 
-            possibleLocations = self._getAdjecentToPosition(position)
-            for possibleLocation in possibleLocations:
-                if square.number in self.board[possibleLocation].notedNumbers:
-                    self.board[possibleLocation].notedNumbers.remove(square.number)
+            self.lastFreeCell(position)
+            self.lastRemainingCell(position)
     
+    def lastFreeCell(self, position : Vector2):
+        square = self.board[position]
+        subGrid = square.subGrid
+        for subSquare in subGrid.squares:
+            if square.number in subSquare.notedNumbers:
+                subSquare.notedNumbers.remove(square.number)
+
+    def lastRemainingCell(self, position : Vector2):
+        square = self.board[position]
+        possibleLocations = self._getAdjecentToPosition(position)
+        for possibleLocation in possibleLocations:
+            if square.number in self.board[possibleLocation].notedNumbers:
+                self.board[possibleLocation].notedNumbers.remove(square.number)
+
     def obviousSingle(self):
         for subGrid in self.subGrids.values():
             for emptySquare in subGrid.emptySquares:
@@ -96,13 +105,12 @@ class Board:
                     return True
         return False
     
-    def lastRemainingCell(self):
+    def obviousPairs(self):
         for subGrid in self.subGrids.values():
-            remainingNumbers = subGrid.getRemainingNumbers()
-            if len(remainingNumbers) == 1:
-                self.setNumber(subGrid.emptySquares[0].position, remainingNumbers[0])
-                return True
-        return False
+            pairs = []
+            for emptySquare in subGrid.emptySquares:
+                if len(emptySquare.notedNumbers) == 1:
+                    pass
 
     def setNumber(self, position : Vector2, number : int):
         self.board[position].number = number
@@ -133,11 +141,11 @@ class Board:
                 self.board[positionVector] = Square(None, self.subGrids[subGridVector], positionVector)
 
                 #All possible numbers can be in every box unless that subgrid has been added to the lookup table.
-                self.board[positionVector].notedNumbers = [i for i in range(1, 10)]
+                #self.board[positionVector].notedNumbers = [i for i in range(1, 10)]
 
                 self.subGrids[subGridVector].addSquare(self.board[positionVector])
         
-        self.scanSquares()
+        #self.scanSquares()
     
     def render(self, screen : pygame.Surface):
 
@@ -212,7 +220,7 @@ class Board:
 sudokuBoard = Board(9, 9)
 sudokuBoard.setup()
 
-commandOrder = [sudokuBoard.lastRemainingCell, sudokuBoard.obviousSingle]
+commandOrder = [sudokuBoard.obviousSingle]
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
@@ -247,11 +255,14 @@ while running:
             if event.key == pygame.K_l:
                 with open("output.sav", "rb") as f:
                     sudokuBoard = pickle.load(f)
+
+            if event.key == pygame.K_p:
+                sudokuBoard.scanSquares()
             
             if event.key == pygame.K_RETURN:
                 progress = True
 
-    sudokuBoard.scanSquares()
+    #sudokuBoard.scanSquares()
 
     if progress:
         progress = False
