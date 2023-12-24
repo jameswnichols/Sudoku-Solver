@@ -4,6 +4,12 @@ import pygame
 
 pygame.init()
 
+SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
+
+BOARD_SCALE = 50
+
+FONT : dict[int, pygame.Font] = {x : pygame.Font("dogicapixelbold.ttf", x) for x in range(1, 100)}
+
 class Vector2:
     def __init__(self, x : int, y : int):
         self.x, self.y = x, y
@@ -85,7 +91,7 @@ class Board:
     def setup(self, numberLocations : dict[Vector2, int] = {}):
         self.board = {}
         self.subGrids = {}
-        self.unscannedPositions ={} #list(numberLocations.keys())
+        self.unscannedPositions = [] #list(numberLocations.keys())
 
         #Generates a list of possible numbers that can be in each square in each subgrid, minus pre-supplied numbers.
         notedNumberLookup = self._generatePreSubgridHashes(numberLocations)
@@ -113,6 +119,55 @@ class Board:
                 self.subGrids[subGridVector].addSquare(self.board[positionVector])
         
         self.scanSquares()
+    
+    def render(self, screen : pygame.Surface):
+
+        centreVector = Vector2(SCREEN_WIDTH//2, SCREEN_HEIGHT//2)
+
+        renderedBoardWidth, renderedBoardHeight = self.width * BOARD_SCALE, self.height * BOARD_SCALE
+
+        for y in range(0, self.height):
+            for x in range(0, self.width):
+                number = self.board[Vector2(x, y)].number
+                number = "" if not number else number
+
+                textSurface = FONT[15].render(str(number), False, (0,0,0))
+
+                squarePosition = Vector2(x * BOARD_SCALE, y * BOARD_SCALE)
+
+                halfBoardScale = BOARD_SCALE / 2
+
+                #Centre square coordinate to its position relative to the centre of the screen.
+                squarePosition = squarePosition + centreVector - Vector2(renderedBoardWidth//2, renderedBoardHeight//2)
+
+                pygame.draw.rect(screen, (0, 0, 0), pygame.Rect(squarePosition.x, squarePosition.y, BOARD_SCALE, BOARD_SCALE), 1)
+
+                textSizeHalfVector = Vector2(textSurface.get_width()//2, textSurface.get_height()//2)
+
+                #Centre text relative to its square coordinate
+                textPosition = squarePosition + Vector2(halfBoardScale, halfBoardScale) - textSizeHalfVector
+
+                screen.blit(textSurface, (textPosition.x, textPosition.y))
 
 sudokuBoard = Board(9, 9)
 sudokuBoard.setup(numberLocations={Vector2(4, 4) : 1})
+
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+clock = pygame.time.Clock()
+
+running = True
+
+while running:
+    screen.fill((255,255,255))
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    sudokuBoard.render(screen)
+
+    pygame.display.flip()
+    clock.tick_busy_loop(60)
+
+pygame.quit()
