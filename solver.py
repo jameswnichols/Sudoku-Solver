@@ -26,20 +26,25 @@ class Square:
 
 class SubGrid:
     def __init__(self):
-        self.squares = []
+        self.squares : list[Square] = []
     
     def addSquare(self, square : Square):
         self.squares.append(square)
 
+    def hasNumber(self, number : int):
+        return number in [sq.number for sq in self.squares]
+
 class Board:
     def __init__(self):
         self.board = {}
-        self.subGrids = []
-        self.setup()
+        self.subGrids = {}
 
-    def setup(self):
+    def setup(self, numberLocations : dict = {}):
         self.board = {}
         self.subGrids = {}
+
+        #TODO - Generate subgrid-hash : [list of numbers] dict for pre-supplied numbers
+
         for y in range(0, 9):
             currentSubGridY = (y + 1) // 3
             for x in range(0, 9):
@@ -55,3 +60,4 @@ class Board:
                 self.subGrids[subGridVectorHash].addSquare(self.board[positionVectorHash])
 
 sudokuBoard = Board()
+sudokuBoard.setup({})
