@@ -42,9 +42,11 @@ class Square:
 class SubGrid:
     def __init__(self):
         self.squares : list[Square] = []
+        self.emptySquares = []
     
     def addSquare(self, square : Square):
         self.squares.append(square)
+        self.emptySquares.append(square)
 
     def hasNumber(self, number : int):
         return number in [sq.number for sq in self.squares]
@@ -53,7 +55,6 @@ class Board:
     def __init__(self, width : int, height : int):
         self.board = {}
         self.subGrids = {}
-        self.unscannedPositions = []
         self.width, self.height = width, height
         self.topLeftPosition = Vector2(0, 0)
         self.renderSize = Vector2(0, 0)
@@ -68,29 +69,37 @@ class Board:
         return list(possibleLocations)
 
     def scanSquares(self):
-        while self.unscannedPositions:
-            position = self.unscannedPositions.pop()
-            squareNumber = self.board[position].number
+        for position, square in self.board.items():
+            square.notedNumbers = [x for x in range(1, 10)]
 
+        for position, square in self.board.items():
             #Remove noted numbers for number in grid
-            subGrid = self.board[position].subGrid
-            for square in subGrid.squares:
-                if squareNumber in square.notedNumbers:
-                    square.notedNumbers.remove(squareNumber)
+            subGrid = square.subGrid
+            for subSquare in subGrid.squares:
+                if square.number in subSquare.notedNumbers:
+                    subSquare.notedNumbers.remove(square.number)
 
             possibleLocations = self._getAdjecentToPosition(position)
-            for location in possibleLocations:
-                if squareNumber in self.board[location].notedNumbers:
-                    self.board[location].notedNumbers.remove(squareNumber)
+            for possibleLocation in possibleLocations:
+                if square.number in self.board[possibleLocation].notedNumbers:
+                    self.board[possibleLocation].notedNumbers.remove(square.number)
+    
+    def nakedSingle(self):
+        pass
 
     def setNumber(self, position : Vector2, number : int):
         self.board[position].number = number
-        self.unscannedPositions.append(position)
+        if self.board[position] in self.board[position].subGrid.emptySquares:
+            self.board[position].subGrid.emptySquares.remove(self.board[position])
+    
+    def removeNumber(self, position : Vector2):
+        self.board[position].number = None
+        if self.board[position] not in self.board[position].subGrid.emptySquares:
+            self.board[position].subGrid.emptySquares.append(self.board[position])
 
-    def setup(self, numberLocations : dict[Vector2, int] = {}):
+    def setup(self):
         self.board = {}
         self.subGrids = {}
-        self.unscannedPositions = []
 
         for y in range(0, self.height):
             currentSubGridY = y // 3
@@ -104,10 +113,7 @@ class Board:
                     self.subGrids[subGridVector] = SubGrid()
 
                 #If the position is in the pre-supplied numbers, then use that number instead.
-                squareNumber = numberLocations[positionVector] if positionVector in numberLocations else None
                 self.board[positionVector] = Square(None, self.subGrids[subGridVector])
-
-                self.setNumber(positionVector, squareNumber)
 
                 #All possible numbers can be in every box unless that subgrid has been added to the lookup table.
                 self.board[positionVector].notedNumbers = [i for i in range(1, 10)]
@@ -195,6 +201,8 @@ clock = pygame.time.Clock()
 
 running = True
 
+progress = False
+
 while running:
     screen.fill((255,255,255))
 
@@ -210,6 +218,9 @@ while running:
                     continue
                 sudokuBoard.setNumber(hoveredVector, event.key-48)
             
+            if event.key == pygame.K_0:
+                sudokuBoard.removeNumber(sudokuBoard.getMouseHoveredVector())
+            
             if event.key == pygame.K_s:
                 with open("output.sav","wb") as f:
                     pickle.dump(sudokuBoard, f)
@@ -219,6 +230,10 @@ while running:
                     sudokuBoard = pickle.load(f)
 
     sudokuBoard.scanSquares()
+
+    if progress:
+        progress = False
+        #Run solving functions
 
     sudokuBoard.render(screen)
 
