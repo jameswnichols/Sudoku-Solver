@@ -18,12 +18,40 @@ class Vector2:
     def hash(self):
         return hash((self.x, self.y))
 
+class Square:
+    def __init__(self, number : int, subGrid : SubGrid):
+        self.number = number
+        self.notedNumbers = []
+        self.grid = subGrid
+
+class SubGrid:
+    def __init__(self):
+        self.squares = []
+    
+    def addSquare(self, square : Square):
+        self.squares.append(square)
+
 class Board:
     def __init__(self):
         self.board = {}
+        self.subGrids = []
+        self.setup()
 
-    def reset(self):
+    def setup(self):
         self.board = {}
+        self.subGrids = {}
         for y in range(0, 9):
+            currentSubGridY = (y + 1) // 3
             for x in range(0, 9):
-                self.board[(x, y)]
+                currentSubGridX = (x + 1) // 3
+
+                positionVectorHash = Vector2(x, y).hash()
+                subGridVectorHash = Vector2(currentSubGridX, currentSubGridY).hash()
+
+                if subGridVectorHash not in self.subGrids:
+                    self.subGrids[subGridVectorHash] = SubGrid()
+
+                self.board[positionVectorHash] = Square(None, self.subGrids[subGridVectorHash])
+                self.subGrids[subGridVectorHash].addSquare(self.board[positionVectorHash])
+
+sudokuBoard = Board()
