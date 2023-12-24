@@ -34,10 +34,11 @@ class Vector2:
         return hash((self.x, self.y))
 
 class Square:
-    def __init__(self, number : int, subGrid : SubGrid):
+    def __init__(self, number : int, subGrid : SubGrid, position : Vector2):
         self.number = number
         self.notedNumbers = []
         self.subGrid = subGrid
+        self.position = position
 
 class SubGrid:
     def __init__(self):
@@ -50,6 +51,9 @@ class SubGrid:
 
     def hasNumber(self, number : int):
         return number in [sq.number for sq in self.squares]
+
+    def getRemainingNumbers(self):
+        return [x for x in range(1, 10) if x not in [sq.number for sq in self.squares]]
 
 class Board:
     def __init__(self, width : int, height : int):
@@ -84,8 +88,21 @@ class Board:
                 if square.number in self.board[possibleLocation].notedNumbers:
                     self.board[possibleLocation].notedNumbers.remove(square.number)
     
-    def nakedSingle(self):
-        pass
+    def obviousSingle(self):
+        for subGrid in self.subGrids.values():
+            for emptySquare in subGrid.emptySquares:
+                if len(emptySquare.notedNumbers) == 1:
+                    self.setNumber(emptySquare.position, emptySquare.notedNumbers[0])
+                    return True
+        return False
+    
+    def lastRemainingCell(self):
+        for subGrid in self.subGrids.values():
+            remainingNumbers = subGrid.getRemainingNumbers()
+            if len(remainingNumbers) == 1:
+                self.setNumber(subGrid.emptySquares[0].position, remainingNumbers[0])
+                return True
+        return False
 
     def setNumber(self, position : Vector2, number : int):
         self.board[position].number = number
@@ -113,7 +130,7 @@ class Board:
                     self.subGrids[subGridVector] = SubGrid()
 
                 #If the position is in the pre-supplied numbers, then use that number instead.
-                self.board[positionVector] = Square(None, self.subGrids[subGridVector])
+                self.board[positionVector] = Square(None, self.subGrids[subGridVector], positionVector)
 
                 #All possible numbers can be in every box unless that subgrid has been added to the lookup table.
                 self.board[positionVector].notedNumbers = [i for i in range(1, 10)]
@@ -195,6 +212,8 @@ class Board:
 sudokuBoard = Board(9, 9)
 sudokuBoard.setup()
 
+commandOrder = [sudokuBoard.lastRemainingCell, sudokuBoard.obviousSingle]
+
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 clock = pygame.time.Clock()
@@ -228,12 +247,19 @@ while running:
             if event.key == pygame.K_l:
                 with open("output.sav", "rb") as f:
                     sudokuBoard = pickle.load(f)
+            
+            if event.key == pygame.K_RETURN:
+                progress = True
 
     sudokuBoard.scanSquares()
 
     if progress:
         progress = False
-        #Run solving functions
+        
+        for command in commandOrder:
+            result = command()
+            if result:
+                break
 
     sudokuBoard.render(screen)
 
