@@ -57,18 +57,6 @@ class Board:
         self.topLeftPosition = Vector2(0, 0)
         self.renderSize = Vector2(0, 0)
 
-    def _generatePreSubgridHashes(self, numberLocations : dict[Vector2, int]):
-        subgridNumbers = {}
-        for location, number in numberLocations.items():
-            subGridVector = Vector2((location.x)//3, (location.y)//3)
-            if subGridVector not in subgridNumbers:
-                subgridNumbers[subGridVector] = [x for x in range(1, 10)]
-                subgridNumbers[subGridVector].remove(number)
-            else:
-                subgridNumbers[subGridVector].remove(number)
-
-        return subgridNumbers
-
     def _getAdjecentToPosition(self, position : Vector2):
         possibleLocations = set()
         for y in range(0, self.height):
@@ -101,10 +89,7 @@ class Board:
     def setup(self, numberLocations : dict[Vector2, int] = {}):
         self.board = {}
         self.subGrids = {}
-        self.unscannedPositions = [] #list(numberLocations.keys())
-
-        #Generates a list of possible numbers that can be in each square in each subgrid, minus pre-supplied numbers.
-        notedNumberLookup = self._generatePreSubgridHashes(numberLocations)
+        self.unscannedPositions = []
 
         for y in range(0, self.height):
             currentSubGridY = y // 3
@@ -124,7 +109,7 @@ class Board:
                 self.setNumber(positionVector, squareNumber)
 
                 #All possible numbers can be in every box unless that subgrid has been added to the lookup table.
-                self.board[positionVector].notedNumbers = [i for i in range(1, 10)] if subGridVector not in notedNumberLookup else notedNumberLookup[subGridVector]
+                self.board[positionVector].notedNumbers = [i for i in range(1, 10)]
 
                 self.subGrids[subGridVector].addSquare(self.board[positionVector])
         
